@@ -1,0 +1,196 @@
+﻿@page "/"
+@inject ITipoComidaService tipoComidaService
+@inject SweetAlertService Swal;
+
+<h3>Contenido para los tipos de comida</h3>
+
+@if (listaTiposComida == null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <div class="frame-table">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Tipo de comida</th>
+                    <th>Accion</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var tipoComidax in listaTiposComida)
+                {
+                    <tr>
+                        <td>@tipoComidax.TipoComidaId</td>
+                        <td>@tipoComidax.TipoComida</td>
+                        <td>
+                            <span @onclick="(e) => EditTipoComida(tipoComidax)" class="table-editar">Editar</span>,
+                            <span @onclick="(e) => SwalDelete(tipoComidax)" class="table-eliminar">Eliminar</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    
+}
+
+<EditForm Model="tipoComidum">
+    <form>
+        <div class="mb-3 mt-3">
+            <label for="nombre" class="form-label">Tipo de comida:</label>
+            <input class="form-control col-sm-4" type="text" @bind="tipoComidum.TipoComida" />
+        </div>
+        <input type="button" class="btn btn-primary" value="Guardar" @onclick="SaveTipoComida" />
+        <input type="button" class="btn btn-secondary" value="Cancelar" @onclick="reRound" />
+    </form>
+</EditForm>
+
+@code {
+    private TipoComidum tipoComidum = new();
+    protected async Task SaveTipoComida()
+    {
+        if (tipoComidum.TipoComida != null)
+        {
+            await tipoComidaService.SaveOneComidum(tipoComidum);
+            await SwalInsert(tipoComidum);
+            tipoComidum = new();
+            await reRound();
+        }
+        else
+        {
+            await SwalTipoComidaVacio();
+        }
+    }
+
+    protected async Task DeleteTipoComida(int i)
+    {
+        await tipoComidaService.DeleteOneComidum(i);
+        await reRound();
+    }
+
+    protected async Task ChangeTipoComida(TipoComidum TCduM)
+    {
+        if (tipoComidum.TipoComida != null)
+        {
+            await SwalInsert(TCduM);
+        }
+        else
+        {
+            await SwalTipoComidaVacio();
+        }
+        await reRound();
+    }
+
+    public IEnumerable<TipoComidum>? listaTiposComida { get; set; }
+    public string? Message { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        await reRound();
+    }
+
+    protected async Task reRound()
+    {
+        try
+        {
+            listaTiposComida = await tipoComidaService.GetAllTiposoComidum(); 
+        }
+        catch (Exception e)
+        {
+            Message = e.Message;
+        }
+    }
+
+    protected async Task SwalDelete(TipoComidum TCduM)
+    {
+
+        SweetAlertResult result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Deseas borrar el tipo de comida " + TCduM.TipoComida + "?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ShowConfirmButton = false,
+                ShowDenyButton = true,
+                DenyButtonText = "Si, Borrar!",
+                ConfirmButtonText = "Si, Borrar!",
+                CancelButtonText = "No, Conservar"
+            });
+
+        if (!string.IsNullOrEmpty(result.Value))
+        {
+            await DeleteTipoComida(TCduM.TipoComidaId);
+            await Swal.FireAsync(
+                "Borrado",
+                "El tipo de comida " + TCduM.TipoComida + " ha sido eliminado",
+                SweetAlertIcon.Success
+            );
+        }
+        else if (result.Dismiss == DismissReason.Cancel)
+        {
+            await Swal.FireAsync(
+              "Cancelado",
+              "La elimicacion del tipo de comida " + TCduM.TipoComida + " fue cancelada",
+              SweetAlertIcon.Error
+              );
+        }
+    }
+
+    protected async Task SwalInsert(TipoComidum TCduM)
+    {
+        SweetAlertResult result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Se agrego el nuevo tipo de comida " + TCduM.TipoComida + " con exito",
+                Icon = SweetAlertIcon.Success,
+                ShowConfirmButton = false,
+                Timer = 2500,
+                Position = SweetAlertPosition.BottomRight
+            }
+        );
+    }
+
+    protected async Task SwalTipoComidaVacio()
+    {
+        SweetAlertResult result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Campo Vacio por favor ingresa un tipo de comida",
+                Icon = SweetAlertIcon.Warning
+            }
+        );
+    }
+
+    protected async Task EditTipoComida(TipoComidum TCduM)
+    {
+        SweetAlertResult result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Editando el tipo de comida " + TCduM.TipoComida,
+                Icon = SweetAlertIcon.Info,
+                Input = SweetAlertInputType.Text,
+                InputLabel = "Escribe el nuevo tipo",
+                InputPlaceholder = "Ingresa...",
+                InputValue = TCduM.TipoComida
+            }
+        );
+
+        if (!string.IsNullOrEmpty(result.Value))
+        {
+            if (result.Value != null)
+            {
+                TCduM.TipoComida = result.Value;
+                await tipoComidaService.SaveOneComidum(TCduM);
+                await reRound();
+                await Swal.FireAsync(
+                "Actualizado",
+                "El tipo de comida ha sido cambiado a " + result.Value,
+                SweetAlertIcon.Success
+                );
+            }
+            else
+            {
+                await SwalTipoComidaVacio();
+            }
+
+        }
+    }
+}
