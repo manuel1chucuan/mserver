@@ -3,7 +3,7 @@
 @inject SweetAlertService Swal;
 
 <h3>Contenido para los tipos de comida</h3>
-
+<input class="form-control mb-3" type="text" placeholder="Filtro" @oninput="ActualizarFiltro" />
 @if (listaTiposComida == null)
 {
     <p>Cargando...</p>
@@ -14,13 +14,53 @@ else
         <table class="table">
             <thead>
                 <tr>
-                    <th>Id</th>
-                    <th>Tipo de comida</th>
+                    <th @onclick="(e) => {bolMain = true;OrderList(true);}" class="hov-col">
+                        Id
+                        @if (bolMain && bolId)
+                        {
+                            <span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8"><path fill="currentColor" d="M3 0v5H1l3.03 3L7 5H5V0H3z" /></svg>
+                            </span>
+                        }
+                        @if (bolMain && !bolId)
+                        {
+                            <span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8"><path fill="currentColor" d="M3.97 0L1 3h2v5h2V3h2L3.97 0z" /></svg>
+                            </span>
+                        }
+                        @if (!bolMain)
+                        {
+                            <span class="no-visible">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8"><path fill="currentColor" d="M3.97 0L1 3h2v5h2V3h2L3.97 0z" /></svg>
+                            </span>
+                        }
+                    </th>
+                    <th @onclick="(e) => {bolMain = false;OrderList(true);}" class="hov-col">
+                        Tipo de comida
+                        @if (!bolMain && bolTipo)
+                        {
+                            <span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8"><path fill="currentColor" d="M3 0v5H1l3.03 3L7 5H5V0H3z" /></svg>
+                            </span>
+                        }
+                        @if (!bolMain && !bolTipo)
+                        {
+                            <span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8"><path fill="currentColor" d="M3.97 0L1 3h2v5h2V3h2L3.97 0z" /></svg>
+                            </span>
+                        }
+                        @if (bolMain)
+                        {
+                            <span class="no-visible">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8"><path fill="currentColor" d="M3.97 0L1 3h2v5h2V3h2L3.97 0z" /></svg>
+                            </span>
+                        }
+                    </th>
                     <th>Accion</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var tipoComidax in listaTiposComida)
+                @foreach (var tipoComidax in listaTiposComida.Where(tc => tc.TipoComida != null && tc.TipoComida.Contains(filtro, StringComparison.OrdinalIgnoreCase)))
                 {
                     <tr>
                         <td>@tipoComidax.TipoComidaId</td>
@@ -48,7 +88,17 @@ else
     </form>
 </EditForm>
 
+<TipoComidaTable listaTiposComida="listaTiposComida" />
+
 @code {
+    private string? filtro = "";
+    private void ActualizarFiltro(ChangeEventArgs e)
+    {
+        if(e.Value != null)
+        {
+            filtro = e.Value.ToString();
+        }
+    }
     private TipoComidum tipoComidum = new();
     protected async Task SaveTipoComida()
     {
@@ -86,16 +136,50 @@ else
 
     public IEnumerable<TipoComidum>? listaTiposComida { get; set; }
     public string? Message { get; set; }
+    public bool bolMain = true;
+    public bool bolId = true;
+    public bool bolTipo = true;
     protected override async Task OnInitializedAsync()
     {
         await reRound();
+    }
+
+    private void OrderList(bool flag)
+    {
+        if (listaTiposComida == null)
+        {
+            return;
+        }
+
+        if (bolMain)
+        {
+            if (flag)
+            {
+                bolId = !bolId;
+            }
+            listaTiposComida = bolId
+                ? listaTiposComida.OrderBy(tc => tc.TipoComidaId).ToList()
+                : listaTiposComida.OrderByDescending(tc => tc.TipoComidaId).ToList();  
+        }
+        else
+        {
+            if (flag)
+            {
+                bolTipo = !bolTipo;
+            }
+            listaTiposComida = bolTipo
+                ? listaTiposComida.OrderBy(tc => tc.TipoComida).ToList()
+                : listaTiposComida.OrderByDescending(tc => tc.TipoComida).ToList();
+
+        }
     }
 
     protected async Task reRound()
     {
         try
         {
-            listaTiposComida = await tipoComidaService.GetAllTiposoComidum(); 
+            listaTiposComida = await tipoComidaService.GetAllTiposoComidum();
+            OrderList(false);
         }
         catch (Exception e)
         {
@@ -175,22 +259,21 @@ else
 
         if (!string.IsNullOrEmpty(result.Value))
         {
-            if (result.Value != null)
-            {
-                TCduM.TipoComida = result.Value;
-                await tipoComidaService.SaveOneComidum(TCduM);
-                await reRound();
-                await Swal.FireAsync(
-                "Actualizado",
-                "El tipo de comida ha sido cambiado a " + result.Value,
-                SweetAlertIcon.Success
-                );
-            }
-            else
+            TCduM.TipoComida = result.Value;
+            await tipoComidaService.SaveOneComidum(TCduM);
+            await reRound();
+            await Swal.FireAsync(
+            "Actualizado",
+            "El tipo de comida ha sido cambiado a " + result.Value,
+            SweetAlertIcon.Success
+            );
+        }
+        else
+        {
+            if (!result.IsDismissed)
             {
                 await SwalTipoComidaVacio();
             }
-
         }
     }
 }

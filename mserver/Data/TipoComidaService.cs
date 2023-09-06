@@ -22,7 +22,9 @@ namespace mserver.Data
 
         public async Task<IEnumerable<TipoComidum>> GetAllTiposoComidum()
         {
-            return await _context.TipoComida.ToListAsync();
+            //var Tcomida = await _context.TipoComida.ToListAsync();
+            var Tcomida = await _context.TipoComida.OrderBy(tc => tc.TipoComidaId).ToListAsync();
+            return Tcomida;
         }
 
         public async Task<TipoComidum?> GetOneComidum(int i)

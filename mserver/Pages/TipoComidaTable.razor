@@ -1,0 +1,36 @@
+﻿@if (listaTiposComida == null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <div class="frame-table">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>
+                        Id
+                    </th>
+                    <th>
+                        Tipo de comida
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var tipoComidax in listaTiposComida)
+                {
+                    <tr>
+                        <td>@tipoComidax.TipoComidaId</td>
+                        <td>@tipoComidax.TipoComida</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+}
+
+@code {
+    [Parameter]
+    public IEnumerable<TipoComidum>? listaTiposComida { get; set; }
+}

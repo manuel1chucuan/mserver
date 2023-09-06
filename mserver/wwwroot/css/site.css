@@ -84,7 +84,21 @@ a, .btn-link {
         color: red;
     }
 
-.frame-table{
+.frame-table {
     height: 30rem;
     overflow: auto;
+}
+
+.no-visible {
+    color:#ffffff00;
+}
+
+.hov-col {
+    cursor: pointer;
+}
+
+.hov-col:hover {
+    cursor: pointer;
+    color: darkblue;
+    background-color:aliceblue;
 }
